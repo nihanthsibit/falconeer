@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Param, Post, Res } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { SignUpRequest } from '../types/dto';
 import { ValidationPipe } from 'src/validators/validation.pipe';
@@ -18,23 +18,6 @@ export class UsersController {
   @Post('/create')
   async create(@Body(new ValidationPipe()) request: SignUpRequest, @Res({ passthrough: true }) response): Promise<object> {
     return await this.appService.createUser(request, response);
-  }
-
-  @Roles(role_id.ADMIN)
-  @Get('/users')
-  async getUsers(@Res({ passthrough: true }) response): Promise<object> {
-    const userList = await this.appService.getUserList(response);
-    return {
-      data: userList
-    }
-  }
-
-  @Get(':id')
-  async getUser(@Param('id') id: string, @Res({ passthrough: true }) response): Promise<object> {
-    const user = await this.appService.getUserById(id, response);
-    return {
-      data: user
-    }
   }
 
   @Roles(role_id.ADMIN)

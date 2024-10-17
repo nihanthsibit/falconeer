@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { UnauthorizedException } from '@nestjs/common/exceptions/unauthorized.exception';
 import { Reflector } from '@nestjs/core';
+import { GqlExecutionContext } from '@nestjs/graphql';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { JWT_SECRET } from 'src/constants';
@@ -15,6 +16,8 @@ export class AuthGuard implements CanActivate {
     constructor(private jwtService: JwtService, private reflector: Reflector) {}
   
     async canActivate(context: ExecutionContext): Promise<boolean> {
+        const ctx = GqlExecutionContext.create(context);
+        const { req } = ctx.getContext();
         const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
             context.getHandler(),
             context.getClass(),
@@ -22,8 +25,8 @@ export class AuthGuard implements CanActivate {
         if(isPublic) {
             return true;
         }
-        const request = context.switchToHttp().getRequest();
-        const token = this.extractTokenFromHeader(request);
+
+        const token = this.extractTokenFromHeader(req);
         if (!token) {
             throw new UnauthorizedException();
         }
@@ -34,7 +37,7 @@ export class AuthGuard implements CanActivate {
                     secret: JWT_SECRET
                 }
             );
-            request['user'] = payload;
+            req['user'] = payload;
         } catch {
             throw new UnauthorizedException();
         }

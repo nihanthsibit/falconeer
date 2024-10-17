@@ -42,37 +42,25 @@ export class UsersService {
     }
   }
 
-  async getUserList(res: Response): Promise<object> {
+  async getUserList(req): Promise<Users[]> {
     try {
-      const users = await this.getUsers();
-      res.status(HttpStatus.OK);
+      const users = await this.getUsers(req);
       return users;      
     } catch (error) {
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR);
-      res.json({
-        message: 'Error fetching user list.',
-        error: error.message
-      });
-      return;
+      throw new Error('Failed to fetch user list.');
     }
   }
 
-  async getUserById(id: string, res: Response): Promise<object> {
+  async getUserById(id: string): Promise<Users> {
     try {
       const user = await this.getSingleUser(id);
-      res.status(HttpStatus.OK);
       if(user.length) {
         return user[0];
       } else {
-        return {};
+        throw new Error('No user found.');
       }
     } catch (error) {
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR);
-      res.json({
-        message: 'Error fetching user details.',
-        error: error.message
-      });
-      return;
+      throw new Error('Failed to fetch user.');
     }
   }
 
@@ -145,15 +133,18 @@ export class UsersService {
   private async addUser(dbObj): Promise<object> {
     try {
       const user = await this.usersRepository.save(dbObj);
-      console.log("ADDED USER: ",user);
       return user;
     } catch (error) {
       throw error;
     }
   }
 
-  private async getUsers() {
+  private async getUsers(req) {
     try {
+      const isAdmin = (req.user.role_id === 1);
+      if(!isAdmin) {
+        return await this.getSingleUser(req.user.user_id);
+      }
       const users = await this.usersRepository.find({
         select: {
           user_id: true,
@@ -162,6 +153,7 @@ export class UsersService {
           email: true,
           gender: true,
           status: true,
+          role_id: true,
           created_date: true
         }
       });
